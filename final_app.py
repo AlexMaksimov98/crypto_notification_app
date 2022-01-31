@@ -29,8 +29,8 @@ class CryptoNotificationsSender:
             session.headers.update(headers)
             response = session.get(url, params=parameters)
             data = response.json()
-            percent_change_24h = data['data'][cryptocurrency]['quote']['USD']['percent_change_24h']
-            self.percent_changes.append(round(percent_change_24h, 1))
+            percent_change_1h = data['data'][cryptocurrency]['quote']['USD']['percent_change_1h']
+            self.percent_changes.append(round(percent_change_1h, 1))
             self.changed_cryptocurrencies = list(zip(self.cryptowallet, self.percent_changes))
         return self.changed_cryptocurrencies
 
