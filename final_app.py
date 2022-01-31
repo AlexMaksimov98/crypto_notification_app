@@ -2,7 +2,6 @@ import time
 import requests
 import os
 from bs4 import BeautifulSoup
-from twilio.rest import Client
 from googlesearch import search
 
 
@@ -10,16 +9,14 @@ class CryptoNotificationsSender:
 
     def __init__(self):
         self.coinmarket_api_key = os.environ.get('COINMARKET_API_KEY')
-        self.twilio_number = os.environ.get('TWILIO_NUMBER')
-        self.verified_number = os.environ.get('VERIFIED_NUMBER')
-        self.twilio_sid = os.environ.get('TWILIO_SID')
-        self.twilio_auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
-        self.cryptowallet = ['SLP', 'DOGE', 'TRX']
+        self.cryptowallet = ['BTC', 'DOGE', 'TRX', 'SOL', 'ETH', 'ADA']
         self.changed_cryptocurrencies = []
         self.percent_changes = []
         self.all_titles_list = []
         self.all_links_list = []
         self.message_to_user = ''
+        self.chat_id = os.environ.get('CHAT_ID')
+        self.bot_token = os.environ.get('BOT_TOKEN')
 
     # Iterate over my wallet, get data from CoinmarketCap
 
@@ -32,13 +29,13 @@ class CryptoNotificationsSender:
             session.headers.update(headers)
             response = session.get(url, params=parameters)
             data = response.json()
-            percent_change_1h = data['data'][cryptocurrency]['quote']['USD']['percent_change_1h']
-            self.percent_changes.append(round(percent_change_1h, 1))
+            percent_change_24h = data['data'][cryptocurrency]['quote']['USD']['percent_change_24h']
+            self.percent_changes.append(round(percent_change_24h, 1))
             self.changed_cryptocurrencies = list(zip(self.cryptowallet, self.percent_changes))
         return self.changed_cryptocurrencies
 
     # This function iterates over all changed cryptocurrencies and checks if their percent if more 4% or less than 4%
-    # If percent is between -5% and 5% --> It removes this tuple from list of changed cryptocurrencies.
+    # If percent is between -5% and 5% —> It removes this tuple from list of changed cryptocurrencies.
 
     def check_for_changes(self):
         self.changed_cryptocurrencies = [i for i in self.changed_cryptocurrencies if i[1] > 5 or i[1] < -5]
@@ -73,17 +70,14 @@ class CryptoNotificationsSender:
         news = ''.join([f'{str(title)}\n\n' for title in news_arr])
         links = ','.join(links_arr).replace(',', ' \n\n')
         self.message_to_user = f'{title}\n{news}{links}'
+        print(self.message_to_user)
         return self.message_to_user
 
-    # This function uses Twilio and it sends a message, that has been built in previous function.
+    # This function sends a message, that has been built in previous function.
 
-    def send_a_message(self):
-        client = Client(self.twilio_sid, self.twilio_auth_token)
-        client.messages.create(
-            body=self.message_to_user,
-            from_=self.twilio_number,
-            to=self.verified_number
-        )
+    def send_a_message(self, message):
+        return requests.get(f'https://api.telegram.org/bot{self.bot_token}/sendMessage?chat_id={self.chat_id}&text='
+                            f'{message}')
 
 
 app = CryptoNotificationsSender()
@@ -95,9 +89,9 @@ while True:
             app.check_recent_news(item)
             app.get_news_links()
             app.build_a_message(item, app.all_titles_list, app.all_links_list)
-            app.send_a_message()
-        print('I am sleeping and waiting for changes :)\n')
-        time.sleep(1800)
+            app.send_a_message(app.message_to_user)
+            print('I am sleeping and waiting for changes :)\n')
+            time.sleep(1800)
     else:
-        print('No big changes on the market. Waiting for one more hour.....\n')
+        app.send_a_message(message='No big changes on the market. Waiting for one more hour.....\n')
         time.sleep(3600)
