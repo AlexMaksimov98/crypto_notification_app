@@ -70,7 +70,6 @@ class CryptoNotificationsSender:
         news = ''.join([f'{str(title)}\n\n' for title in news_arr])
         links = ','.join(links_arr).replace(',', ' \n\n')
         self.message_to_user = f'{title}\n{news}{links}'
-        print(self.message_to_user)
         return self.message_to_user
 
     # This function sends a message, that has been built in previous function.
@@ -81,8 +80,8 @@ class CryptoNotificationsSender:
 
 
 app = CryptoNotificationsSender()
-app.get_cryptocurrency_data()
 while True:
+    app.get_cryptocurrency_data()
     if app.check_for_changes():
         print('Some cryptocurrencies changed. Looking for news and building a message....\n')
         for item in app.changed_cryptocurrencies:
